@@ -67,24 +67,8 @@ jobs:
       - name: Lighthouse CI
         uses: treosh/lighthouse-ci-action@v12
         with:
-          urls: |
-            http://localhost:3000
+          configPath: lighthouserc.json
           uploadArtifacts: true
           temporaryPublicStorage: true
-          runs: 1
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Assert Lighthouse thresholds
-        run: |
-          REPORT=$(ls -t .lighthouseci/*.json 2>/dev/null | head -1)
-          if [ -z "$REPORT" ]; then echo "No Lighthouse report found"; exit 1; fi
-          LCP=$(python3 -c "import json,sys; d=json.load(open('$REPORT')); print(d['audits']['largest-contentful-paint']['numericValue'])")
-          CLS=$(python3 -c "import json,sys; d=json.load(open('$REPORT')); print(d['audits']['cumulative-layout-shift']['numericValue'])")
-          echo "LCP=${LCP}ms  CLS=${CLS}"
-          python3 -c "
-          lcp=float('$LCP'); cls=float('$CLS')
-          if lcp > 2500: raise SystemExit(f'LCP {lcp}ms > 2500ms threshold')
-          if cls > 0.1:  raise SystemExit(f'CLS {cls} > 0.1 threshold')
-          print('Lighthouse thresholds passed')
-          "
