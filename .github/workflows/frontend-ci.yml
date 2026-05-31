@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  frontend:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,8 +16,42 @@ jobs:
           node-version: "20"
           cache: npm
       - run: npm ci
+
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
-      - run: npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build for e2e / Lighthouse
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      - name: Run Playwright e2e
+        run: npx playwright test
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      - name: Bundle size check
+        run: |
+          BUNDLE=$(du -sk .next/static | awk '{print $1}')
+          echo "Bundle size: ${BUNDLE} KB"
+          if [ "$BUNDLE" -gt 512 ]; then
+            echo "::error::Bundle size ${BUNDLE} KB exceeds 512 KB limit"
+            exit 1
+          fi
+
+      - name: Run Lighthouse CI
+        run: |
+          npm install -g @lhci/cli
+          npx next start &
+          sleep 5
+          lhci autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - run: npm run build:widget
