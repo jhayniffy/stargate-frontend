@@ -11,21 +11,7 @@ import { CopyField } from '@/components/ui/CopyField';
 import { Input } from '@/components/ui/Input';
 import { WebhookDeliveryLog } from '@/components/dashboard/WebhookDeliveryLog';
 import { api } from '@/lib/api';
-
-const AVAILABLE_EVENTS = [
-  'invoice.paid',
-  'invoice.expired',
-  'invoice.cancelled',
-  'settlement.completed',
-] as const;
-
-const schema = z.object({
-  url: z.string().url({ message: 'Please enter a valid URL (e.g. https://example.com/hook)' }),
-  secret: z.string().optional(),
-  events: z
-    .array(z.string())
-    .min(1, { message: 'Select at least one event type' }),
-});
+import { webhookSchema as schema, AVAILABLE_EVENTS } from '@/lib/webhooks';
 
 type FormData = z.infer<typeof schema>;
 
